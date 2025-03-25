@@ -6,48 +6,111 @@ struct PokemonDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 16) {
-                if viewModel.isLoading {
-                    ProgressView()
-                } else if let error = viewModel.errorMessage {
-                    Text(error+" Si")
-                        .foregroundColor(.red)
-                } else if let pokemon = viewModel.selectedPokemon {
+            if viewModel.isLoading {
+                ProgressView("Cargando...")
+                    .padding()
+            } else if let error = viewModel.errorMessage {
+                Text("Error: \(error)")
+                    .foregroundColor(.red)
+                    .padding()
+            } else if let pokemon = viewModel.selectedPokemon {
+                VStack(alignment: .center, spacing: 20) {
                     
-                    // Imagen con AsyncImage (iOS 15+)
-                    AsyncImage(url: URL(string: pokemon.sprites.other.home.frontDefault)) { phase in
-                        if let image = phase.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(height: 200)
-                        } else if phase.error != nil {
-                            Text("Error loading image")
-                        } else {
-                            ProgressView()
+                    // Cabecera con nombre e ID
+                    HStack {
+                        Text(pokemon.species.name.capitalized)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        Spacer()
+                        Text("#\(String(format: "%03d", pokemon.id))")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal)
+                    
+                    // Imagen oficial con fondo gris
+                    ZStack(alignment: .top) {
+                        // Rectángulo de fondo gris (100 de alto)
+                        //TODO: Modificar estilos de imagen de fondo y estacks
+                        Rectangle()
+                            .fill(Color.gray)
+                            .frame(height: 100)
+                            .frame(maxWidth: .infinity, alignment: .bottom)
+                        
+                        // AsyncImage del Pokémon
+                        AsyncImage(url: URL(string: pokemon.sprites.other.home.frontDefault)) { phase in
+                            if let image = phase.image {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 200)
+                            } else if phase.error != nil {
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 200)
+                            } else {
+                                ProgressView()
+                                    .frame(height: 200)
+                            }
                         }
                     }
+
                     
-                    // Descripción
-                    //Text(pokemon.description ?? "Sin descripcion")
-                    //    .padding()
+                    // Información básica
+                    HStack(spacing: 40) {
+                        VStack {
+                            Text("Peso")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text("\(pokemon.weight)")
+                                .font(.headline)
+                        }
+                        VStack {
+                            Text("Altura")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text("\(pokemon.height)")
+                                .font(.headline)
+                        }
+                    }
+                    .padding(.horizontal)
                     
-                    // Estadísticas (por ejemplo, una lista de estadísticas)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Stats:")
+                    Divider()
+                    
+                    // Estadísticas
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Estadísticas")
                             .font(.headline)
                         ForEach(pokemon.stats, id: \.stat.name) { stat in
-                            Text("\(stat.stat.name.capitalized): \(stat.baseStat)")
+                            HStack {
+                                Text(stat.stat.name.capitalized)
+                                    .frame(width: 120, alignment: .leading)
+                                ProgressView(value: Float(stat.baseStat), total: 200)
+                                    .accentColor(.green)
+                                Text("\(stat.baseStat)")
+                                    .frame(width: 40, alignment: .trailing)
+                            }
                         }
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    
+                    Spacer()
                 }
+                .padding(.vertical)
             }
-            .padding()
         }
-        .navigationTitle(pokemonIdOrName.capitalized)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             viewModel.getPokemonDetail(idOrName: pokemonIdOrName)
+        }
+    }
+}
+
+struct PokemonDetailView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            PokemonDetailView(pokemonIdOrName: "bulbasaur")
         }
     }
 }
